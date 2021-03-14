@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+- AWS::Serverless-2016-10-31
+Resources:
+  HelloWorld:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: serverlessadsfunction-adserver
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: production
+          OVERRIDE_ADS: 0
+          AD_URL_S3_BUCKET: https://{{YOUR_BUCKET_NAME}}.s3.amazonaws.com/
+          VAST_URl: https://{{YOUR_API_ID}}.execute-api.us-east-1.amazonaws.com/Prod/live
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Events:
+        GetVAST:
+          Type: Api
+          Properties:
+            Path: /live/
+            Method: get
+        GetVMAP:
+          Type: Api
+          Properties:
+            Path: /vod/
+            Method: get
+      CodeUri: HelloWorld
+  LambdaExecutionRole:
+    Description: Creating service role in IAM for AWS Lambda
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: serverlessadslambdarole-Execution
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
